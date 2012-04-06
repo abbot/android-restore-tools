@@ -1,10 +1,13 @@
 #!/usr/bin/env python
 
-import ctypes
 import optparse
 import os
 import sys
+import tempfile
+import datetime
+from xml.etree import ElementTree as etree
 
+from convert import read_messages, read_calls
 import yaffs
 
 def read_chunk(fd, size):
@@ -43,7 +46,7 @@ def extract(filename):
                 while remaining > 0:
                     chunk_data, tags = read_segment(fd)
                     if remaining < tags.t.byteCount:
-                        s = chunk_data[:remain]
+                        s = chunk_data[:remaining]
                     else:
                         s = chunk_data[:tags.t.byteCount]
                     out.write(s)
@@ -94,7 +97,7 @@ def get_files(filename, filenames, callback=None):
                     while remaining > 0:
                         chunk_data, tags = read_segment(fd)
                         if remaining < tags.t.byteCount:
-                            s = chunk_data[:remain]
+                            s = chunk_data[:remaining]
                         else:
                             s = chunk_data[:tags.t.byteCount]
                         contents += s
@@ -114,6 +117,98 @@ def dotty(header):
         sys.stdout.write(".")
     sys.stdout.flush()
 
+def get_save_filename(filename=""):
+    while True:
+        if filename == "":
+            new_filename = raw_input("Save as: ")
+        else:
+            new_filename = raw_input("Save as (empty=%s): " % filename)
+        if new_filename == "" and filename == "":
+            continue
+        if new_filename != "":
+            filename = new_filename
+        try:
+            os.stat(filename)
+            ans = raw_input("Warning: %s already exists, overwrite (y/n)? " % filename)
+
+            if ans.lower().startswith("y"):
+                break
+        except OSError:
+            break
+    return filename
+
+def save(filename, content):
+    open(get_save_filename(filename), "wb").write(content)
+
+def extract_sms(content):
+    fd, name = tempfile.mkstemp()
+    fd = os.fdopen(fd, "wb")
+    try:
+        fd.write(content)
+        fd.close()
+        messages = read_messages(name)
+        print "Read %s messages" % messages.attrib["count"]
+        newest = datetime.datetime.fromtimestamp(int(messages.getchildren()[0].attrib["date"])/1000)
+        output = newest.strftime("sms-%Y%m%d%H%M%S.xml")
+        etree.ElementTree(messages).write(get_save_filename(output),
+                                          encoding="utf-8",
+                                          xml_declaration=True)
+        
+    except Exception, exc:
+        print "Failed to extract messages: %s" % exc
+    finally:
+        os.unlink(name)
+
+def extract_calls(content):
+    fd, name = tempfile.mkstemp()
+    fd = os.fdopen(fd, "wb")
+    try:
+        fd.write(content)
+        fd.close()
+        calls = read_calls(name)
+        print "Read %s calls" % calls.attrib["count"]
+        newest = datetime.datetime.fromtimestamp(int(calls.getchildren()[0].attrib["date"])/1000)
+        output = newest.strftime("calls-%Y%m%d%H%M%S.xml")
+        etree.ElementTree(calls).write(get_save_filename(output),
+                                       encoding="utf-8",
+                                       xml_declaration=True)
+
+    except Exception, exc:
+        print "Failed to extract calls: %s" % exc
+    finally:
+        os.unlink(name)
+
+def interactive(filename):
+    print "Scanning and reading image (this may take some time)"
+    r = get_files(filename, ["mmssms.db", "contacts2.db"], dotty)
+    print ""
+    while True:
+        print
+        print "Found files:"
+        names = r.keys()
+        for i, n in enumerate(names):
+            print "[%d] %s" % (i+1, n)
+
+        n = int(raw_input("Enter file number to extract (0 to quit): ")) - 1
+        if n < 0 or n >= len(names):
+            break
+        name = names[n]
+        print "File %s selected." % name
+        print "Possible actions:"
+        print "[f] save file"
+        print "[s] extract SMS messages from file"
+        print "[c] extract Call logs from file"
+        t = raw_input("Please choose action: ")
+        t = t.lower()
+        
+        if t.startswith("f"):
+            save(os.path.basename(names[n]), r[names[n]])
+        elif t.startswith("s"):
+            extract_sms(r[names[n]])
+        elif t.startswith("c"):
+            extract_calls(r[names[n]])
+    
+
 def main():
     parser = optparse.OptionParser(usage="%prog [options...] data.img")
     parser.add_option("-x", "--extract", action="store_true",
@@ -127,26 +222,7 @@ def main():
     if opts.extract:
         extract(args[0])
     else:
-        print "Scanning and reading image (this may take some time)"
-        r = get_files(args[0], ["mmssms.db", "contacts2.db"], dotty)
-        print ""
-        print "Found files:"
-        names = r.keys()
-        for i, n in enumerate(names):
-            print "[%d] %s" % (i+1, n)
-
-        while True:
-            n = int(raw_input("Enter file number to extract (0 to quit): ")) - 1
-            if n < 0 or n >= len(names):
-                break
-            name = names[n]
-            t = raw_input("File type (1=mmssms.db, 2=contacts2.db): ")
-            if t[0] == "1":
-                open("mmssms.db", "wb").write(r[names[n]])
-            elif t[0] == "2":
-                open("contacts2.db", "wb").write(r[names[n]])
-            else:
-                break
+        interactive(args[0])
 
 if __name__ == '__main__':
     main()

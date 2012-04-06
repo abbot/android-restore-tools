@@ -1,6 +1,6 @@
 # -*- encoding: utf-8 -*-
 
-from ctypes import *
+from ctypes import Structure, c_uint32, c_uint8, c_uint16, c_char, c_int32
 
 class PackedTags2TagsPart(Structure):
     _fields_ = [('sequenceNumber', c_uint32),
