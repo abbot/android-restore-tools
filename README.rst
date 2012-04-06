@@ -6,6 +6,13 @@ This package contains utilities which can be used to convert android
 SMS/MMS database and android contacts database to XML dumps, readable
 by popular android backup/restore tools.
 
+extract
+=======
+
+This program can extract yaffs filesystem images (usually produced by
+recovery backups) or just search for contacts and SMS databases in
+images.
+
 callog2xml
 ==========
 
