@@ -2,50 +2,16 @@
 # -*- encoding: utf-8 -*-
 
 import datetime
-import locale
 import optparse
 import os
-import sqlite3
 import sys
-from Tkinter import *
+from Tkinter import Tk, Text, Label, Button, Frame, END
 import tkFileDialog
 from xml.etree import ElementTree as etree
 import webbrowser
 
-def v(x):
-    xs = unicode(x)
-    if xs == "":
-        return "null"
-    elif x is None:
-        return "null"
-    else:
-        return xs
-    
-def read_calls(dbfile):
-    locale.setlocale(locale.LC_ALL, "C")
-    db = sqlite3.Connection(dbfile)
-    
-    c = db.cursor()
-    c.execute("SELECT COUNT(*) FROM calls")
-    count = c.fetchone()[0]
+from convert import read_calls
 
-    calls = etree.Element("calls", attrib={"count": str(count)})
-    c.execute("SELECT number, duration, date, type FROM calls ORDER BY date DESC")
-    while True:
-        row = c.fetchone()
-        if row is None: break
-
-        number, duration, date, type = row
-        call = etree.Element("call", attrib={
-            "number": v(number),
-            "duration": v(duration),
-            "date": v(date),
-            "type": v(type),
-            })
-        calls.append(call)
-
-    return calls
-        
 def cli():
     parser = optparse.OptionParser(usage="%prog [options...] contacts2.db")
     parser.add_option("-o", "--output", help="Output file name (default: generated from the date of the newest call)")
@@ -109,9 +75,6 @@ class Gui(Frame):
         self.msg.tag_config('link', foreground="blue", underline=True)
         self.msg.tag_bind('link', '<Button-1>', lambda x: webbrowser.open(URL, new=True))
         self.msg["state"] = "disabled"
-
-    def show_link(self, event):
-        idx = 1
 
     def __init__(self, master=None):
         Frame.__init__(self, master)

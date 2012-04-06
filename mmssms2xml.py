@@ -7,7 +7,7 @@ import optparse
 import os
 import sqlite3
 import sys
-from Tkinter import *
+from Tkinter import Tk, Text, Label, Button, Frame, END
 import tkFileDialog
 from xml.etree import ElementTree as etree
 import webbrowser
@@ -122,9 +122,6 @@ class Gui(Frame):
         self.msg.tag_config('link', foreground="blue", underline=True)
         self.msg.tag_bind('link', '<Button-1>', lambda x: webbrowser.open(URL, new=True))
         self.msg["state"] = "disabled"
-
-    def show_link(self, event):
-        idx = 1
 
     def __init__(self, master=None):
         Frame.__init__(self, master)

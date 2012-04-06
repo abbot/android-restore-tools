@@ -1,5 +1,6 @@
 *~
 *.db
 *.xml
+*.pyc
 /build
 /dist
