@@ -42,7 +42,11 @@ def extract(filename):
             if header.type == yaffs.FILE:
                 remaining = header.fileSize
                 out = open(full_path_name, "wb")
-                os.fchmod(out.fileno(), header.yst_mode)
+                try:
+                    os.fchmod(out.fileno(), header.yst_mode)
+                except:
+                    pass
+
                 while remaining > 0:
                     chunk_data, tags = read_segment(fd)
                     if remaining < tags.t.byteCount:
@@ -60,7 +64,7 @@ def extract(filename):
                     os.mkdir(full_path_name, 0777)
                     print "created directory %s" % full_path_name
                 except OSError, exc:
-                    if "File exists" in str(exc):
+                    if "exists" in str(exc):
                         pass
                     else:
                         print str(exc)
@@ -141,13 +145,13 @@ def save(filename, content):
     open(get_save_filename(filename), "wb").write(content)
 
 def extract_sms(content):
-    fd, name = tempfile.mkstemp()
-    fd = os.fdopen(fd, "wb")
+    fd_n, name = tempfile.mkstemp()
+    fd = os.fdopen(fd_n, "wb")
     try:
         fd.write(content)
         fd.close()
         messages = read_messages(name)
-        print "Read %s messages" % messages.attrib["count"]
+        print "Read %s messages" % str(messages.attrib["count"])
         newest = datetime.datetime.fromtimestamp(int(messages.getchildren()[0].attrib["date"])/1000)
         output = newest.strftime("sms-%Y%m%d%H%M%S.xml")
         etree.ElementTree(messages).write(get_save_filename(output),
@@ -156,8 +160,12 @@ def extract_sms(content):
         
     except Exception, exc:
         print "Failed to extract messages: %s" % exc
+        print repr(exc)
     finally:
-        os.unlink(name)
+        try:
+            os.unlink(name)
+        except:
+            print "Warning: failed to remove temporary file %s" % name
 
 def extract_calls(content):
     fd, name = tempfile.mkstemp()
@@ -166,7 +174,7 @@ def extract_calls(content):
         fd.write(content)
         fd.close()
         calls = read_calls(name)
-        print "Read %s calls" % calls.attrib["count"]
+        print "Read %s calls" % str(calls.attrib["count"])
         newest = datetime.datetime.fromtimestamp(int(calls.getchildren()[0].attrib["date"])/1000)
         output = newest.strftime("calls-%Y%m%d%H%M%S.xml")
         etree.ElementTree(calls).write(get_save_filename(output),
@@ -176,7 +184,10 @@ def extract_calls(content):
     except Exception, exc:
         print "Failed to extract calls: %s" % exc
     finally:
-        os.unlink(name)
+        try:
+            os.unlink(name)
+        except:
+            print "Warning: failed to remove temporary file %s" % name
 
 def interactive(filename):
     print "Scanning and reading image (this may take some time)"

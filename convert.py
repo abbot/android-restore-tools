@@ -3,8 +3,14 @@
 import datetime
 import locale
 import sqlite3
+import os
 
 from xml.etree import ElementTree as etree
+
+if os.name == 'posix':
+    datefmt = "%b %d, %Y %l:%M:%S %p"
+else:
+    datefmt = "%c"
 
 def v(x):
     xs = unicode(x)
@@ -37,6 +43,9 @@ def read_calls(dbfile):
             "type": v(type),
             })
         calls.append(call)
+
+    c.close()
+    db.close()
 
     return calls
         
@@ -72,8 +81,11 @@ def read_messages(dbfile):
             "read": v(read),
             "status": v(status),
             "locked": v(locked),
-            "readable_date": datetime.datetime.fromtimestamp(date/1000).strftime("%b %d, %Y %l:%M:%S %p"),
+            "readable_date": datetime.datetime.fromtimestamp(date/1000).strftime(datefmt),
             })
         smses.append(sms)
+
+    c.close()
+    db.close()
 
     return smses
