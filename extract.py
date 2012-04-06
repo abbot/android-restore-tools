@@ -213,11 +213,30 @@ def main():
     parser = optparse.OptionParser(usage="%prog [options...] data.img")
     parser.add_option("-x", "--extract", action="store_true",
                       help="Don't search for required databases, just extract the filesystem")
+    parser.add_option("-s", "--sms", action="store_true",
+                      help="Input file is mmssms.db, just convert SMS messages to XML format.")
+    parser.add_option("-c", "--calls", action="store_true",
+                      help="Input file is contacts2.db, just convert Call Logs to XML format.")
+    parser.description = "This program can extract YAFFS filesystem images, extract and convert to readable format SMS messages from mmssms.db and extract and convert to readable format Call Logs from contacts2.db. It is intended to be used with Android SMS/Call Logs Backup and Restore applications by Ritesh Sahu (android market download links: http://goo.gl/ZO5cy and http://goo.gl/MOKKJ)"
     opts, args = parser.parse_args()
 
     if len(args) != 1:
         parser.print_help()
         sys.exit(1)
+
+    if opts.sms:
+        try:
+            extract_sms(open(args[0], "rb").read())
+        except Exception, exc:
+            print "Failed to extract messages: %s" % exc
+        return
+
+    if opts.calls:
+        try:
+            extract_calls(open(args[0], "rb").read())
+        except Exception, exc:
+            print "Failed to extract call logs: %s" % exc
+        return
 
     if opts.extract:
         extract(args[0])
