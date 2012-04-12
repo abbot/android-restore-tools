@@ -58,12 +58,12 @@ def read_messages(dbfile):
     count = c.fetchone()[0]
 
     smses = etree.Element("smses", attrib={"count": str(count)})
-    c.execute("SELECT _id, thread_id, address, person, date, protocol, read, priority, status, type, callback_number, reply_path_present, subject, body, service_center, failure_cause, locked, error_code, stack_type, seen, sort_index FROM sms ORDER BY date DESC")
+    c.execute("SELECT address, date, protocol, read, status, type, subject, body, service_center, locked FROM sms ORDER BY date DESC")
     while True:
         row = c.fetchone()
         if row is None: break
 
-        rec_id, thread_id, address, person, date, protocol, read, priority, status, type, callback_number, reply_path_present, subject, body, service_center, failure_cause, locked, error_code, stack_type, seen, sort_index = row
+        address, date, protocol, read, status, type, subject, body, service_center, locked = row
 
         if protocol is None:
             protocol = 0
